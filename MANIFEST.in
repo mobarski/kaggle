@@ -1,1 +1,1 @@
-include kaggle/data/*
+include kaggle/data/spooky/*.csv
