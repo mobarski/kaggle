@@ -8,4 +8,5 @@ setup(name='kaggle',
       author_email='mobarski@gmail.com',
       license='MIT',
       packages=['kaggle'],
+      include_package_data=True,
       zip_safe=False)
