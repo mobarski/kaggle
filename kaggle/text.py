@@ -5,7 +5,8 @@ from itertools import islice
 
 def get_stats(X, Y, base='df', stats='', agg='sum', norm='sum', alpha=0.5, merge=[]):
 	model = {}
-	_stats = set(stats.split(' ')+[base,base+'_y'])
+	base_y = base+'_y'
+	_stats = set(stats.split(' ')+[base,base_y,'p_y','sum_y'])
 	_y = set(Y)
 	
 	for s in _stats:
@@ -29,25 +30,34 @@ def get_stats(X, Y, base='df', stats='', agg='sum', norm='sum', alpha=0.5, merge
 
 	for m in merge:
 		model[base].update(m[base])
-		for y in m[base+'_y']:
-			model[base+'_y'][y].update(m[base+'_y'][y])
+		for y in m[base_y]:
+			model[base_y][y].update(m[base_y][y])
 			_y.add(y)
 
 	pass # TODO drop terms below treshold
 
+	for y in _y:
+		model['sum_y'][y] = sum(model[base_y][y].values())
 
+	if norm=='sum':
+		_norm = sum(model[base].values())
+		for y in _y:
+			model['p_y'][y] = 1.0 * model['sum_y'][y] / _norm
+	if norm=='doc':
+		pass # TODO
+	
 	# ==[ local ]===========================================================
 	
 	if 'chi_y' in _stats:
 		# TODO sum_f* vs base
 		sum_f_y = {}
 		for y in _y:
-			sum_f_y[y] = sum(model[base+'_y'][y].values())
+			sum_f_y[y] = sum(model[base_y][y].values())
 		sum_f = sum(sum_f_y.values())
 		for t,f in model[base].items():
 			for y in _y:
 				# observed
-				o_c1_t1 = model[base+'_y'][y][t]
+				o_c1_t1 = model[base_y][y][t]
 				o_c1_t0 = sum_f_y[y] - o_c1_t1
 				o_c0_t1 = model[base][t] - o_c1_t1
 				o_c0_t0 = sum_f-sum_f_y[y] - o_c0_t1
@@ -69,7 +79,7 @@ def get_stats(X, Y, base='df', stats='', agg='sum', norm='sum', alpha=0.5, merge
 			cnt_y[y] = Y.count(y) # TODO base=tf
 		for t,f in model[base].items():
 			for y in _y:
-				f_y = model[base+'_y'][y].get(t,0)
+				f_y = model[base_y][y].get(t,0)
 				p_tc = 1.0 * f_y / cnt_y[y]
 				p_ct = 1.0 * f_y / f
 				model['cmfs_y'][y][t] = p_tc * p_ct
@@ -77,9 +87,16 @@ def get_stats(X, Y, base='df', stats='', agg='sum', norm='sum', alpha=0.5, merge
 	if 'dia_y' in _stats:
 		for t,f in model[base].items():
 			for y in _y:
-				f_y = model[base+'_y'][y].get(t,0)
+				f_y = model[base_y][y].get(t,0)
 				p_ct = 1.0 * f_y / f
 				model['dia_y'][y][t] = p_ct
+
+	if 'diax_y' in _stats:
+		for t,f in model[base].items():
+			for y in _y:
+				f_y = model[base_y][y].get(t,0)
+				p_ct = 1.0 * f_y / f
+				model['diax_y'][y][t] = p_ct/model['p_y'][y]
 
 	if 'gini_y' in _stats:
 		cnt_y = {}
@@ -87,14 +104,21 @@ def get_stats(X, Y, base='df', stats='', agg='sum', norm='sum', alpha=0.5, merge
 			cnt_y[y] = Y.count(y) # TODO base=tf
 		for t,f in model[base].items():
 			for y in _y:
-				f_y = model[base+'_y'][y].get(t,0)
+				f_y = model[base_y][y].get(t,0)
 				p_tc = 1.0 * f_y / cnt_y[y]
 				p_ct = 1.0 * f_y / f
 				model['gini_y'][y][t] = p_tc*p_tc * p_ct*p_ct
 	
 	if 'wcp_y' in _stats:
-		pass # TODO
-	
+		V = len(model[base])
+		for y in _y:
+			pr = {}
+			for t in model[base]:
+				f_y = model[base_y][y].get(t,0)
+				pr[t] = (1.+f_y)/(V+model['sum_y'][y])
+			_norm = sum(pr.values())
+			for t in pr:
+				model['wcp_y'][y][t] = pr[t]/_norm
 	
 	# TODO - my functions 
 	
@@ -137,13 +161,14 @@ if __name__=="__main__":
 	X = ['xxx xxx ala ma kota','to jest test work ma','go go power ala ma','xxx xxx go work work kota ma']
 	X = [x.split(' ') for x in X]
 	Y = [0,1,1,0]
-	m = get_stats(X,Y,'df','chi_y chi')
+	m = get_stats(X,Y,'df','dia_y diax_y')
 	#print(m['dia_y'][0])
 	#print(m['dia'])
 	#print(m['gini'])
-	print(m['chi'])
+	print(m['dia_y'][1])
+	print(m['diax_y'][1])
 	#print(get_ngrams('ala ma kota',2,''))
-	m2 = get_stats([['go','west'],['power','test']],[0,1],'df')
-	m3 = get_stats([],[],'df','dia_y',merge=[m,m2])
-	print(m3)
+	#m2 = get_stats([['go','west'],['power','test']],[0,1],'df')
+	#m3 = get_stats([],[],'df','dia_y',merge=[m,m2])
+	#print(m3)
 	
