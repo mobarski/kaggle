@@ -3,7 +3,7 @@ from itertools import islice
 
 # ==============================================================================
 
-def get_stats(X, Y, base='df', stats='', agg='sum', norm='sum', alpha=0.5):
+def get_stats(X, Y, base='df', stats='', agg='sum', norm='sum', alpha=0.5, merge=[]):
 	model = {}
 	_stats = set(stats.split(' ')+[base,base+'_y'])
 	_y = set(Y)
@@ -26,6 +26,12 @@ def get_stats(X, Y, base='df', stats='', agg='sum', norm='sum', alpha=0.5):
 			df = Counter(set(tokens))
 			model['df_y'][y].update(df)
 			model['df'].update(df)
+
+	for m in merge:
+		model[base].update(m[base])
+		for y in m[base+'_y']:
+			model[base+'_y'][y].update(m[base+'_y'][y])
+			_y.add(y)
 
 	pass # TODO drop terms below treshold
 
@@ -137,3 +143,7 @@ if __name__=="__main__":
 	#print(m['gini'])
 	print(m['chi'])
 	#print(get_ngrams('ala ma kota',2,''))
+	m2 = get_stats([['go','west'],['power','test']],[0,1],'df')
+	m3 = get_stats([],[],'df','dia_y',merge=[m,m2])
+	print(m3)
+	
