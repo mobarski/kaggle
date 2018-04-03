@@ -17,6 +17,7 @@ def train_test_split(X,Y,test_size=0.2,sample=1.0):
 
 
 def flat_search(X,Y,args,
+		env,
 		train_fun,
 		predict_fun,
 		score_fun,
@@ -34,20 +35,19 @@ def flat_search(X,Y,args,
 		x_train,y_train,x_test,y_test = train_test_split(X,Y,test_size,sample)
 		for k,vals in args.items():
 			if k not in out: out[k] = {}
-			v_orig = globals().get(k)
+			v_orig = env.get(k)
 			for v in vals:
 				i += 1
 				if v not in out[k]: out[k][v] = []
-				globals()[k]=v
+				env[k]=v
 				t0 = time()
 				model = train_fun(x_train,y_train)
 				pred = predict_fun(model,x_test)
 				score = score_fun(y_test,pred)
 				dt = time()-t0
 				out[k][v] += [score]
-				#print('RUN {} / {} COMPLETE  {} = {}'.format(i,n_runs,k,v)) if verbose else None
-				print('RUN {} / {} COMPLETE  {}'.format(i,n_runs,'  '.join(['{}:{}'.format(_k,_v) for _k,_v in globals().items() if type(_v) in (int,float)]))) if verbose else None
-			globals()[k] = v_orig # TODO pick best 
+				print('RUN {} / {} COMPLETE  {} = {}'.format(i,n_runs,k,v)) if verbose else None
+			env[k] = v_orig # TODO pick best 
 	return out
 
 if __name__=="__main__":
@@ -58,8 +58,9 @@ if __name__=="__main__":
 	def score(*args): return 0.42
 	out = flat_search([],[],
 		dict(TOP=[1,2,3,4,5,6,7,8],NGRAM=[1,2,3,4]),
+		globals(),
 		train,predict,score,
 		repeat=3,verbose=1)
 	print(out)
 	print(train_test_split([1,2,3,4,5,6,7,8,9,10],[0,0,0,0,0,1,1,1,1,1],test_size=0.4))
-	
+
