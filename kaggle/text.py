@@ -3,7 +3,7 @@ from itertools import islice
 
 # ==============================================================================
 
-def get_stats(X, Y, base='df', stats='', agg='sum', norm='sum', alpha=0.5, merge=[]):
+def get_stats(X, Y, base='df', stats='', agg='sum', norm='sum', alpha=0.5, merge=[], treshold=0):
 	model = {}
 	base_y = base+'_y'
 	_stats = set(stats.split(' ')+[base,base_y,'p_y','sum_y'])
@@ -34,7 +34,13 @@ def get_stats(X, Y, base='df', stats='', agg='sum', norm='sum', alpha=0.5, merge
 			model[base_y][y].update(m[base_y][y])
 			_y.add(y)
 
-	pass # TODO drop terms below treshold
+	# drop terms below treshold
+	if treshold:
+		below = [t for t in model[base] if model[base][t]<=treshold]
+		for t in below:
+			del model[base][t]
+			for y in _y:
+				del model[base_y][y][t]
 
 	for y in _y:
 		model['sum_y'][y] = sum(model[base_y][y].values())
@@ -156,6 +162,7 @@ def get_ngrams(tokens, n, sep=' '):
     iters = [islice(tokens,i,None) for i in range(n)]
     return [sep.join(x) for x in zip(*iters)]
 
+# ==============================================================================
 
 if __name__=="__main__":
 	X = ['xxx xxx ala ma kota','to jest test work ma','go go power ala ma','xxx xxx go work work kota ma']
