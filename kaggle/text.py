@@ -3,6 +3,7 @@ from itertools import islice
 
 # ==============================================================================
 
+# TODO drop_under, drop_over, cut_low, cut_top
 def get_stats(X, Y, base='df', stats='', agg='sum', norm='sum', alpha=0.5, merge=[], treshold=0):
 	model = {}
 	base_y = base+'_y'
@@ -155,6 +156,21 @@ def get_stats(X, Y, base='df', stats='', agg='sum', norm='sum', alpha=0.5, merge
 
 	
 	return model
+
+# ==============================================================================
+
+def get_prob(model,tokens,Y,stat):
+	out = []
+	for t in tokens:
+		norm = 0.0
+		prob = []
+		for y in Y:
+			norm += model[stat][y][t]
+		for y in Y:
+			p = model[stat][y][t] / norm
+			prob.append(p)
+		out.append([t,prob])
+	return out
 
 # ==============================================================================
 
